@@ -9,13 +9,20 @@ from sklearn.metrics import mean_squared_error
 import plotly.express as px
 import plotly.graph_objects as go
 
-# App Title
+# Title and Sidebar
 st.title("Business Intelligence Web Application")
+st.sidebar.title("Navigation")
 
 # Database Connection
 @st.cache_resource
 def connect_to_database():
-    db_url = "postgresql+psycopg2://postgres:admin@localhost/retail_db"
+    db_url = (
+        f"postgresql+psycopg2://{st.secrets['database']['user']}:"
+        f"{st.secrets['database']['password']}@"
+        f"{st.secrets['database']['host']}:"
+        f"{st.secrets['database']['port']}/"
+        f"{st.secrets['database']['dbname']}"
+    )
     engine = create_engine(db_url)
     return engine
 
@@ -26,8 +33,7 @@ engine = connect_to_database()
 def load_data(query):
     return pd.read_sql(query, engine)
 
-# Navigation Sidebar
-st.sidebar.title("Navigation")
+# Sidebar Navigation
 pages = ["Data Visualization", "Data Mining"]
 selected_page = st.sidebar.radio("Choose a Module", pages)
 
@@ -41,8 +47,6 @@ if selected_page == "Data Visualization":
         sf.quantity,
         sf.total_price,
         t.invoice_date,
-        t.year,
-        t.month,
         c.customer_id,
         co.country_name,
         p.description
@@ -57,7 +61,7 @@ if selected_page == "Data Visualization":
     # Sidebar Filters
     st.sidebar.header("Filter Options")
     data["invoice_date"] = pd.to_datetime(data["invoice_date"])
-    
+
     # Date Range Filter
     start_date, end_date = st.sidebar.date_input(
         "Select Date Range",
@@ -86,10 +90,10 @@ if selected_page == "Data Visualization":
     with col3:
         st.metric("Unique Products Sold", data["description"].nunique())
 
-    # Modern Visualizations
+    # Visualizations
     st.subheader("Visualizations")
 
-    # 1. Top-Selling Products
+    # Top-Selling Products
     st.markdown("### Top-Selling Products")
     top_products = data.groupby("description")["quantity"].sum().nlargest(10).reset_index()
     fig1 = px.bar(
@@ -103,7 +107,7 @@ if selected_page == "Data Visualization":
     )
     st.plotly_chart(fig1, use_container_width=True)
 
-    # 2. Sales by Region
+    # Sales by Region
     st.markdown("### Sales by Region")
     sales_by_country = data.groupby("country_name")["total_price"].sum().reset_index()
     fig2 = px.pie(
@@ -114,7 +118,7 @@ if selected_page == "Data Visualization":
     )
     st.plotly_chart(fig2, use_container_width=True)
 
-    # 3. Monthly Sales Trends
+    # Monthly Sales Trends
     st.markdown("### Monthly Sales Trends")
     data["month"] = data["invoice_date"].dt.to_period("M").astype(str)
     monthly_sales = data.groupby("month")["total_price"].sum().reset_index()
@@ -143,7 +147,7 @@ elif selected_page == "Data Mining":
 
     tabs = st.tabs(["Customer Segmentation", "Sales Forecasting"])
 
-    # Tab 1: Customer Segmentation
+    # Customer Segmentation
     with tabs[0]:
         st.subheader("Customer Segmentation")
 
@@ -175,9 +179,8 @@ elif selected_page == "Data Mining":
         cluster_summary = customer_data.groupby("cluster")[["totalspend", "purchasefrequency", "recency"]].mean()
         st.dataframe(cluster_summary)
 
-        # Cluster Visualization (Simplified)
+        # Cluster Visualization
         st.subheader("Cluster Visualization")
-        st.write("This chart shows customer clusters based on two key features.")
         x_axis = st.selectbox("Select X-axis Feature", ["totalspend", "purchasefrequency", "recency"])
         y_axis = st.selectbox("Select Y-axis Feature", ["recency", "totalspend", "purchasefrequency"], index=1)
 
@@ -192,7 +195,7 @@ elif selected_page == "Data Mining":
         )
         st.plotly_chart(fig_cluster)
 
-    # Tab 2: Sales Forecasting
+    # Sales Forecasting
     with tabs[1]:
         st.subheader("Sales Forecasting")
 
@@ -221,14 +224,14 @@ elif selected_page == "Data Mining":
 
         st.write(f"Mean Squared Error: {mse:.2f}")
 
-        # Visualization: Actual vs Predicted
+        # Actual vs Predicted Visualization
         fig_actual_pred = go.Figure()
         fig_actual_pred.add_trace(go.Scatter(x=X_test["MonthIndex"], y=y_test, mode="markers", name="Actual"))
         fig_actual_pred.add_trace(go.Scatter(x=X_test["MonthIndex"], y=y_pred, mode="lines", name="Predicted"))
         fig_actual_pred.update_layout(title="Actual vs Predicted Sales", xaxis_title="Month Index", yaxis_title="Sales")
         st.plotly_chart(fig_actual_pred)
 
-        # Visualization: Future Sales Forecast
+        # Future Forecast Visualization
         future_months = pd.DataFrame({"MonthIndex": range(len(monthly_sales) + 1, len(monthly_sales) + 13)})
         future_sales = model.predict(future_months)
 

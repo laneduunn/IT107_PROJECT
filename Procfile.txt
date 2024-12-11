@@ -1,1 +1,0 @@
-web: streamlit run bi_web_app.py --server.port=$PORT --server.enableCORS=false

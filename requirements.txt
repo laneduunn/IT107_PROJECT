@@ -2,8 +2,6 @@ streamlit
 pandas
 numpy
 sqlalchemy
-psycopg2
-sklearn
+psycopg2-binary
+scikit-learn
 plotly
-matplotlib
-seaborn
